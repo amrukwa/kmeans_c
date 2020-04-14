@@ -7,13 +7,13 @@
 typedef struct {
 	int n_features;
 	int n_samples;
-	float * data; // 2D array containing n_samples vectors of n_features dimensions
+	double * data; // 2D array containing n_samples vectors of n_features dimensions
 	int * labels; // 1D array containing label for each sample
 } data_space;
 
 typedef struct {
 	int n_clusters;
-	float * centroids; // 2D array containing n_clusters vectors of n_features dimensions
+	double * centroids; // 2D array containing n_clusters vectors of n_features dimensions
 }cluster_params;
 
 void check_if_data(char first, char second)
@@ -80,8 +80,8 @@ void get_clusters_n(cluster_params* some_clusters, data_space* dimensions)
 
 void allocate_point_memory(data_space* dimensions, cluster_params* some_clusters) // add checking if memory was allocated
 {
-	dimensions->data = (float*)malloc(dimensions->n_samples * dimensions->n_features * sizeof(float));
-	some_clusters->centroids = (float*)malloc(some_clusters->n_clusters * (dimensions->n_features) * sizeof(float));
+	dimensions->data = (double*)malloc(dimensions->n_samples * dimensions->n_features * sizeof(double));
+	some_clusters->centroids = (double*)malloc(some_clusters->n_clusters * (dimensions->n_features) * sizeof(double));
 	dimensions->labels = (int*)calloc(dimensions->n_samples, sizeof(int)); // this way we can skip one iteration later on in first labeling and prevent reseting labels at each call
 }
 
@@ -91,7 +91,7 @@ void load_the_data(data_space* dimensions, FILE* given_data)
 	{
 		for (int x = 0; x < dimensions->n_features; x++)
 		{
-			if (fscanf(given_data, "%f", &dimensions->data[y * dimensions->n_features + x]) != 1)
+			if (fscanf(given_data, "%lf", &dimensions->data[y * dimensions->n_features + x]) != 1)
 			{
 				printf("Check data file for typos.");
 				exit(1);
@@ -106,7 +106,7 @@ void print_to_check(cluster_params* some_clusters, data_space* dimensions)
 	{
 		for (int y = 0; y < dimensions->n_features; y++)
 		{
-			printf("%f", some_clusters->centroids[x * dimensions->n_features + y]);
+			printf("%lf", some_clusters->centroids[x * dimensions->n_features + y]);
 			printf(" ");
 		}
 		printf("\n");
@@ -150,34 +150,34 @@ void fisher_yates(int initial_dimensions, int desired_dimensions, int* indices)
 	}
 }
 
-float Euclidean_distance(float* given_points, float* centres, int dimensions, int point_number, int centre_number) // calculates distance between two points
+double Euclidean_distance(double* given_points, double* centres, int dimensions, int point_number, int centre_number) // calculates distance between two points
 {
-	float distance = 0;
+	double distance = 0;
 	for (int i = 0; i < dimensions; i++)
 	{
-		float distance_for_axis = given_points[point_number * dimensions + i] - centres[centre_number * dimensions + i];
+		double distance_for_axis = given_points[point_number * dimensions + i] - centres[centre_number * dimensions + i];
 		distance = distance + pow(distance_for_axis, 2);
 	}
 	distance = pow(distance, 0.5);
 	return distance;
 }
 
-void label_points(cluster_params* some_clusters, data_space* dimensions, float* distance)
+void label_points(cluster_params* some_clusters, data_space* dimensions)
 {
+	double cur_dist;
+	double min_dist;
+
 	for (int j = 0; j < dimensions->n_samples; j++)
 	{
+		min_dist = Euclidean_distance(dimensions->data, some_clusters->centroids, dimensions->n_features, j, 0);
+		dimensions->labels[j] = 0;
 		for (int k = 0; k < some_clusters->n_clusters; k++)
 		{
-			distance[j * some_clusters->n_clusters + k] = Euclidean_distance(dimensions->data, some_clusters->centroids, dimensions->n_features, j, k);
-		}
-		// now I have all the values for one point: why not choose the smallest already?
-		float smallest_so_far = distance[j * some_clusters->n_clusters];
-		for (int k = 0; k < some_clusters->n_clusters; k++)
-		{
-			if (smallest_so_far > distance[j * some_clusters->n_clusters + k])
+			cur_dist = Euclidean_distance(dimensions->data, some_clusters->centroids, dimensions->n_features, j, k);
+			if (cur_dist < min_dist)
 			{
-				smallest_so_far = distance[j * some_clusters->n_clusters + k];
 				dimensions->labels[j] = k;
+				min_dist = cur_dist;
 			}
 		}
 	}
@@ -189,14 +189,14 @@ void calculate_centroids(cluster_params* some_clusters, data_space* dimensions)
 	{
 		for (int cur_dim = 0; cur_dim < dimensions->n_features; cur_dim++)
 		{
-			float sum_on_axis = 0;
+			double sum_on_axis = 0;
 			int members = 0;
 			for (int cur_point = 0; cur_point < dimensions->n_samples; cur_point++)
 			{
 				if (dimensions->labels[cur_point] == cur_cent)
 				{
-					members++;
-					sum_on_axis = +dimensions->data[cur_point * dimensions->n_features + cur_dim];
+					members= members+1;
+					sum_on_axis = sum_on_axis + dimensions->data[cur_point * dimensions->n_features + cur_dim];
 				}
 				some_clusters->centroids[cur_cent * dimensions->n_features + cur_dim] = sum_on_axis / members;
 			}
@@ -206,16 +206,12 @@ void calculate_centroids(cluster_params* some_clusters, data_space* dimensions)
 
 void kmeans_algorithm(cluster_params* some_clusters, data_space* dimensions)
 {
-	float* distance;
-	distance = (float*)malloc(dimensions->n_samples * some_clusters->n_clusters * sizeof(float));
-	// I allocated this memory here so as not to allocate it max_iter+1 times later on
-	label_points(some_clusters, dimensions, distance); // labeling first time for already initialized centroids
+	label_points(some_clusters, dimensions); // labeling first time for already initialized centroids
 	for (int i = 0; i < max_iter; i++)
 	{
 		calculate_centroids(some_clusters, dimensions); // recalculating centroids by means
-		label_points(some_clusters, dimensions, distance); // labeling
+		label_points(some_clusters, dimensions); // labeling
 	}
-	free(distance);
 }
 
 void free_all(cluster_params* some_clusters, data_space* dimensions)
