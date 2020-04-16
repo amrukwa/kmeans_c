@@ -1,0 +1,32 @@
+version: 1.0.0.{build}
+skip_tags: true
+skip_branch_with_pr: true
+image: Visual Studio 2019
+configuration:
+- Debug
+- Release
+platform: x86
+build:
+  project: kmeans_in_c.sln
+  parallel: true
+  verbosity: minimal
+test: off
+artifacts:
+- path: '**\*.exe'
+  name: executable-$(configuration)
+deploy:
+- provider: GitHub
+  tag: k-means-in-c-v$(appveyor_build_version)
+  auth_token:
+    secure: SYXtRdG+3FpTZcSKWje5OmvtUU5rH4+wWloHdBkZJbpY/w8XAQUZK2Y/lzVt6kCD
+  artifact: /.*\.exe/
+  on:
+    configuration: Release
+    branch: master
+notifications:
+- provider: Email
+  to:
+  - a.mrukwa00@gmail.com
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: false
