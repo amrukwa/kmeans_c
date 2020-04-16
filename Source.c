@@ -16,9 +16,14 @@ struct dataspace {
 };
 
 
-void check_if_data(char first, char second)
+void check_if_data(char first, char second, int x, int y)
 {
-	if (first == ' ' || first == '\n' || first == '.')
+	if (x == 0 && y != 0)
+	{
+		printf("Check the first line.\n");
+		exit(1);
+	}
+	else if (first == ' ' || first == '\n' || first == '.')
 	{
 		if (second == ' ' || second == '\n' || second == '.')
 		{
@@ -74,7 +79,7 @@ struct dataspace* allocate_data(int* n_features, int* n_samples)
 		return 1;
 	}
 	some_data->data_space = allocate_points(n_features, n_samples);
-	some_data->labels = calloc(some_data->data_space->n_samples, sizeof(int));
+	some_data->labels = malloc(some_data->data_space->n_samples*sizeof(int));
 	if (some_data->labels == 0)
 	{
 		destroy_vectors(some_data->data_space);
@@ -93,8 +98,8 @@ void destroy_dataspace(struct dataspace* some_data)
 
 void get_dimensions(int* n_features, int* n_samples, FILE* given_data)
 {
-	int x = 0;
-	int y = 0;
+	int x = -1;
+	int y = -1;
 	int c = getc(given_data);
 	while (c != EOF)
 	{
@@ -110,17 +115,20 @@ void get_dimensions(int* n_features, int* n_samples, FILE* given_data)
 
 		char b = c;
 		c = getc(given_data);
-		check_if_data(b, c);
+		check_if_data(b, c, x, y);
 	}
 	*n_features = x / y;
 	*n_samples = y;
 	fseek(given_data, 0L, SEEK_SET);
 }
 
-void get_clusters_n(int* clusters_number, int* n_samples)
+void get_clusters_n(int* clusters_number, int* n_samples, FILE* given_data)
 {
-	printf("Type the desired number of centroids.\n");
-	scanf("%i", clusters_number);
+	if (fscanf(given_data, "%i", clusters_number) != 1)
+	{
+		printf("Check data file for typos.");
+		exit(1);
+	}
 	if (*clusters_number > * n_samples)
 	{
 		printf("You can't have more clusters than samples.\n");
@@ -144,26 +152,6 @@ void load_the_data(struct dataspace* taken_data, FILE* given_data)
 	}
 }
 
-void print_to_check(struct vectors* some_clusters)
-{
-	for (int x = 0; x < some_clusters->n_samples; x++)
-	{
-		for (int y = 0; y < some_clusters->n_features; y++)
-		{
-			printf("%i: %lf ", x, some_clusters->coords[x * some_clusters->n_features + y]);
-		}
-		printf("\n");
-	}
-}
-
-void print_labels(struct dataspace* taken_data)
-{
-	for (int i = 0; i < taken_data->data_space->n_samples; i++)
-	{
-		printf("%i: %i ", i, taken_data->labels[i]);
-	}
-}
-
 void swap(int* a, int* b)
 {
 	int dummy = *a;
@@ -181,7 +169,7 @@ void fisher_yates(int initial_dimensions, int desired_dimensions, int* indices)
 	}
 }
 
-void initialize_k_means(struct dataspace* taken_data, struct vectors* some_clusters) // wtf
+void initialize_k_means(struct dataspace* taken_data, struct vectors* some_clusters)
 {
 	int* indices;
 	indices = malloc(sizeof(int) * taken_data->data_space->n_samples);
@@ -192,7 +180,7 @@ void initialize_k_means(struct dataspace* taken_data, struct vectors* some_clust
 	fisher_yates(taken_data->data_space->n_samples, some_clusters->n_samples, indices);
 	for (int j = 0; j < some_clusters->n_samples; j++)
 	{
-		for (int k = 0; k < some_clusters->n_features; k++) // here sth doesn't work
+		for (int k = 0; k < some_clusters->n_features; k++)
 		{
 			some_clusters->coords[j * some_clusters->n_features + k] = taken_data->data_space->coords[indices[j] * taken_data->data_space->n_features + k];
 		}
@@ -206,9 +194,9 @@ double Euclidean_distance(double* given_points, double* centres, int dimensions,
 	for (int i = 0; i < dimensions; i++)
 	{
 		double distance_for_axis = given_points[point_number * dimensions + i] - centres[centre_number * dimensions + i];
-		distance = distance + pow(distance_for_axis, 2);
+		distance = distance + distance_for_axis*distance_for_axis;
 	}
-	distance = pow(distance, 0.5);
+	distance = sqrt(distance);
 	return distance;
 }
 
@@ -264,6 +252,38 @@ void kmeans_algorithm(struct dataspace* taken_data, struct vectors* some_cluster
 	}
 }
 
+void save_the_result(struct dataspace* taken_data, struct vectors* some_clusters)
+{
+	FILE* result;
+
+	fopen_s(&result, "result.txt", "w");
+	if (result == NULL)
+	{
+		perror("Creating the file failed.");
+		return 1;
+	}
+	fprintf(result, "You decided to have %i clusters.\n", some_clusters->n_samples);
+
+	fprintf(result, "This resulted in following set of labels (given in the same order as your data):\n");
+	for (int i = 0; i < taken_data->data_space->n_samples; i++)
+	{
+		fprintf(result, "%i ", taken_data->labels[i]);
+	}
+
+	fprintf(result, "\nWhich stands true for following centroids (in this order):\n");
+	for (int x = 0; x < some_clusters->n_samples; x++)
+	{
+		for (int y = 0; y < some_clusters->n_features; y++)
+		{
+			fprintf(result, "%lf ", some_clusters->coords[x * some_clusters->n_features + y]);
+		}
+		fprintf(result, "\n");
+	}
+
+	fclose(result);
+	printf("Data saved in the file result.txt\n");
+}
+
 void free_all(struct dataspace* taken_data, struct vectors* some_clusters)
 {
 	destroy_vectors(some_clusters);
@@ -272,9 +292,9 @@ void free_all(struct dataspace* taken_data, struct vectors* some_clusters)
 
 int main()
 {
-	int n_features = 0;
-	int n_samples = 0;
-	int clusters_number = 0;
+	int n_features; 
+	int n_samples;
+	int clusters_number;
 	struct vectors* some_clusters;
 	struct dataspace* taken_data;
 	FILE* given_data;
@@ -286,16 +306,15 @@ int main()
 		return 1;
 	}
 	get_dimensions(&n_features, &n_samples, given_data);
-	get_clusters_n(&clusters_number, &n_samples);
+	get_clusters_n(&clusters_number, &n_samples, given_data);
 	some_clusters = allocate_points(&n_features, &clusters_number);
 	taken_data = allocate_data(&n_features, &n_samples);
 	load_the_data(taken_data, given_data);
 	fclose(given_data);
 	initialize_k_means(taken_data, some_clusters);
-	print_to_check(some_clusters);
 	kmeans_algorithm(taken_data, some_clusters);
-	print_to_check(some_clusters); //remember to transform it into save_the_result
-	print_labels(taken_data);
+	save_the_result(taken_data, some_clusters);
 	free_all(taken_data, some_clusters);
+	system("pause");
 	return 0;
 }
