@@ -31,5 +31,5 @@ You can download the program [here](https://github.com/amrukwa/kmeans_c/releases
 
 The actual version of the program is marked as _Latest release_.
 To download the code, click `Source code (zip)` or `Source code (tar.gz)` and save it on your computer.
-To download the executable file, click `conway-game-of-life.exe` and save it on your computer. The output file storing the most vital information about performed clustering will be created in the same folder as saved `.exe` file. Remember to prepare the datafile as marked in **The data file**.
+To download the executable file, click `kmeans_in_c.exe` and save it on your computer. The output file storing the most vital information about performed clustering will be created in the same folder as saved `.exe` file. Remember to prepare the datafile as marked in **The data file**.
 
