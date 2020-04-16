@@ -143,6 +143,11 @@ void get_clusters_n(int* clusters_number, int* n_samples, FILE* given_data)
 		printf("You can't have more clusters than samples.\n");
 		exit(1);
 	}
+	if (*clusters_number < 0)
+	{
+		printf("You can't have negative number of clusters.\n");
+		exit(1);
+	}
 }
 
 void load_the_data(struct dataspace* taken_data, FILE* given_data)
