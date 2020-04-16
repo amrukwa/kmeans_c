@@ -16,7 +16,7 @@ artifacts:
   name: executable-$(configuration)
 deploy:
 - provider: GitHub
-  tag: k-means-in-c-v$(appveyor_build_version)
+  tag: kmeans_c-v$(appveyor_build_version)
   auth_token:
     secure: SYXtRdG+3FpTZcSKWje5OmvtUU5rH4+wWloHdBkZJbpY/w8XAQUZK2Y/lzVt6kCD
   artifact: /.*\.exe/
