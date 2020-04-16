@@ -5,12 +5,14 @@
 # define max_iter 1000
 
 struct vectors {
+	// structure storing matrix of n_samples vectors, each of n_features dimensions with their coordinates
 	int n_features;
 	int n_samples;
 	double* coords;
 };
 
 struct dataspace {
+	// structure storing points with their labels 
 	struct vectors* data_space;
 	int* labels;
 };
@@ -18,6 +20,7 @@ struct dataspace {
 
 void check_if_data(char first, char second, int x, int y)
 {
+	// function checking if the formatting of input file is correct
 	if (x == 0 && y != 0)
 	{
 		printf("Check the first line.\n");
@@ -48,6 +51,7 @@ void check_if_data(char first, char second, int x, int y)
 
 struct vectors* allocate_points(int* n_features, int* n_samples)
 {
+	// function creating new instance of structure vectors
 	struct vectors* points;
 	points = malloc(sizeof(struct vectors));
 	if (points == 0)
@@ -66,12 +70,14 @@ struct vectors* allocate_points(int* n_features, int* n_samples)
 
 void destroy_vectors(struct vectors* some_vectors)
 {
+	// function destroying given instance of structure vectors
 	free(some_vectors->coords);
 	free(some_vectors);
 }
 
 struct dataspace* allocate_data(int* n_features, int* n_samples)
 {
+	// function creating new instance of structure dataspace
 	struct dataspace* some_data;
 	some_data = malloc(sizeof(struct dataspace));
 	if (some_data == 0)
@@ -91,6 +97,7 @@ struct dataspace* allocate_data(int* n_features, int* n_samples)
 
 void destroy_dataspace(struct dataspace* some_data)
 {
+	// function destroying given instance of structure dataspace
 	free(some_data->labels);
 	destroy_vectors(some_data->data_space);
 	free(some_data);
@@ -98,6 +105,7 @@ void destroy_dataspace(struct dataspace* some_data)
 
 void get_dimensions(int* n_features, int* n_samples, FILE* given_data)
 {
+	// function getting dimensions of matrix given in input file and checking if it's correct
 	int x = -1;
 	int y = -1;
 	int c = getc(given_data);
@@ -124,6 +132,7 @@ void get_dimensions(int* n_features, int* n_samples, FILE* given_data)
 
 void get_clusters_n(int* clusters_number, int* n_samples, FILE* given_data)
 {
+	// function getting number of clusters from input file and checking if it's correct
 	if (fscanf(given_data, "%i", clusters_number) != 1)
 	{
 		printf("Check data file for typos.");
@@ -138,6 +147,7 @@ void get_clusters_n(int* clusters_number, int* n_samples, FILE* given_data)
 
 void load_the_data(struct dataspace* taken_data, FILE* given_data)
 {
+	// function loading the data from input file into structure and checking for non-number characters
 	for (int y = 0; y < taken_data->data_space->n_samples; y++)
 	{
 		for (int x = 0; x < taken_data->data_space->n_features; x++)
@@ -154,6 +164,7 @@ void load_the_data(struct dataspace* taken_data, FILE* given_data)
 
 void swap(int* a, int* b)
 {
+	// function swapping two variables
 	int dummy = *a;
 	*a = *b;
 	*b = dummy;
@@ -161,6 +172,7 @@ void swap(int* a, int* b)
 
 void fisher_yates(int initial_dimensions, int desired_dimensions, int* indices)
 {
+	// function for obtaining given quantity of non-repeating random numbers in given range
 	srand(time(NULL));
 	for (int i = 0; i < desired_dimensions; i++) // for the sake of optimalization it should be sufficient
 	{
@@ -171,6 +183,7 @@ void fisher_yates(int initial_dimensions, int desired_dimensions, int* indices)
 
 void initialize_k_means(struct dataspace* taken_data, struct vectors* some_clusters)
 {
+	// function initializing k-means algorithm  by random Mac Queen's initialization
 	int* indices;
 	indices = malloc(sizeof(int) * taken_data->data_space->n_samples);
 	for (int i = 0; i < taken_data->data_space->n_samples; i++)
@@ -188,8 +201,9 @@ void initialize_k_means(struct dataspace* taken_data, struct vectors* some_clust
 	free(indices);
 }
 
-double Euclidean_distance(double* given_points, double* centres, int dimensions, int point_number, int centre_number) // calculates distance between two points
+double Euclidean_distance(double* given_points, double* centres, int dimensions, int point_number, int centre_number) 
 {
+	// function calculating Euclidean distance between two points
 	double distance = 0;
 	for (int i = 0; i < dimensions; i++)
 	{
@@ -202,6 +216,7 @@ double Euclidean_distance(double* given_points, double* centres, int dimensions,
 
 void label_points(struct dataspace* taken_data, struct vectors* some_clusters)
 {
+	// function labeling points based on their distance from each of centroids
 	double cur_dist;
 	double min_dist;
 
@@ -223,6 +238,7 @@ void label_points(struct dataspace* taken_data, struct vectors* some_clusters)
 
 void calculate_centroids(struct dataspace* taken_data, struct vectors* some_clusters)
 {
+	// function calculating new centroids as means of points coordinates in specific clusters
 	for (int cur_cent = 0; cur_cent < some_clusters->n_samples; cur_cent++)
 	{
 		for (int cur_dim = 0; cur_dim < taken_data->data_space->n_features; cur_dim++)
@@ -244,6 +260,7 @@ void calculate_centroids(struct dataspace* taken_data, struct vectors* some_clus
 
 void kmeans_algorithm(struct dataspace* taken_data, struct vectors* some_clusters)
 {
+	// function performing k-means algorithm
 	label_points(taken_data, some_clusters); // labeling first time for already initialized centroids
 	for (int i = 0; i < max_iter; i++)
 	{
@@ -254,6 +271,7 @@ void kmeans_algorithm(struct dataspace* taken_data, struct vectors* some_cluster
 
 void save_the_result(struct dataspace* taken_data, struct vectors* some_clusters)
 {
+	// function saving all the vital clustering data into new file
 	FILE* result;
 
 	fopen_s(&result, "result.txt", "w");
@@ -286,6 +304,7 @@ void save_the_result(struct dataspace* taken_data, struct vectors* some_clusters
 
 void free_all(struct dataspace* taken_data, struct vectors* some_clusters)
 {
+	// function freeing all the previously used allocated memory
 	destroy_vectors(some_clusters);
 	destroy_dataspace(taken_data);
 }
