@@ -1,7 +1,7 @@
 # kmeans_c
 
 [![Build status](https://ci.appveyor.com/api/projects/status/yj1sdcuf0883iaud?svg=true)](https://ci.appveyor.com/project/amrukwa/kmeans-c)
-
+[![CodeFactor](https://www.codefactor.io/repository/github/amrukwa/kmeans_c/badge)](https://www.codefactor.io/repository/github/amrukwa/kmeans_c)
 
 ## K-means algorithm implementation in C
 
